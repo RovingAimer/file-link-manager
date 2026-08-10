@@ -1,0 +1,45 @@
+# .NET / WPF build output
+**/bin/
+**/obj/
+**/TestResults/
+**/coverage/
+**/publish/
+*.nupkg
+*.snupkg
+
+# IDE-local state
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Local tools, release packages and process artifacts
+.tools/
+*.log
+*.dmp
+*.dump
+*.stackdump
+*.tmp
+*.temp
+
+# Portable application data
+# Only the repository-root portable data directory is runtime state.
+/data/
+# These record files are sensitive runtime data at any nesting depth by design.
+**/link-records.json
+**/link-records.json.bak
+
+# Private Codex / agent / Superpowers work records
+/.codex/
+/.agents/
+/.superpowers/
+/docs/superpowers/plans/
+/docs/superpowers/sdd/
+/task-*-report.md
+
+# Windows shell metadata
+Thumbs.db
+Desktop.ini
