@@ -79,7 +79,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        SetActivePage(RecordsPage, "链接记录", "按设备和状态查看已创建链接，并安全删除链接入口。");
+        SetActivePage(RecordsPage, "链接记录", "按设备、分组和名称查找记录，并安全删除链接入口。");
     }
 
     public void ShowAboutPage()

@@ -4,6 +4,8 @@
 
 A portable Windows WPF utility that creates equivalent access paths for existing files or directories using native Windows file-link mechanisms, and records operations performed by the application.
 
+This document includes record organization available on the current development branch/local acceptance build. The published GitHub v1.0.0 package does not include custom names, groups, or their search features. The release version has not changed in this work.
+
 ## Overview
 
 File links do not copy source content. After the user provides an existing source path and a link path that does not yet exist, the application creates a link entry. The source remains in place, while the link path provides access to the same content.
@@ -17,6 +19,9 @@ File links do not copy source content. After the user provides an existing sourc
 - Inspect registered links and delete only link entries created by this application and passing identity checks.
 - Keep deletion history; removing a deleted history record changes application data only and does not operate on disk paths again.
 - Use portable JSON data and a backup file without a database service.
+- Development branch: optionally name records when creating links (up to 20 Unicode text elements, supporting Chinese, punctuation, and special characters), and edit names/groups later. Names do not follow Windows filename restrictions and never rename disk paths or files.
+- Development branch: create, rename, or dissolve single-level groups. Dissolving a group keeps its records under **Ungrouped** without deleting disk links.
+- Development branch: filter by group and search names, source paths, or link paths. Records within each group appear newest first by creation time; equal timestamps retain their original order. There is no manual sorting UI.
 
 ## Four native Windows link types
 
@@ -33,11 +38,13 @@ Symbolic links and junctions add only a small amount of filesystem metadata, so 
 
 The application has three pages:
 
-1. **Create Link**: choose a type, enter paths, see live validation, and review the creation preview.
-2. **Link Records**: view by device and status, inspect links, delete link entries, or remove deleted history records.
+1. **Create Link**: choose a type, enter paths, see live validation, and review the creation preview; the acceptance build also offers an optional name and an existing or new group.
+2. **Link Records**: filter by device, status, and group; search names or paths, edit names/groups, inspect links, delete link entries, or remove deleted history records.
 3. **About**: view application information, a current-device identity summary, and the data location.
 
-The data directory is `data/` beside the executable. Its main files are `link-records.json` and `link-records.json.bak`. They contain device summaries, source and link paths, statuses, and timestamps. Treat them as sensitive local application data; do not commit or publish them.
+The data directory is `data/` beside the executable. Its main files are `link-records.json` and `link-records.json.bak`. They contain device summaries, source and link paths, statuses, timestamps, and, in the acceptance build, custom names and groups. Treat them as sensitive local application data; do not commit or publish them.
+
+The acceptance build reads schema 1 without rewriting it on load. The first normal save (including a save after inspection) writes schema 2. Older versions open schema 2 read-only to avoid losing the new metadata during a save. Before upgrading, manually back up the entire `data/` directory, keeping both the JSON primary and `.bak` files. Close the old version before starting the new one. To reuse existing records, place the new EXE beside the existing `data/` directory. The application does not migrate or move data for you.
 
 ## Requirements and permissions
 
@@ -51,8 +58,9 @@ The data directory is `data/` beside the executable. Its main files are `link-re
 1. Start the application and choose a link type on **Create Link**.
 2. Choose or enter an existing source file or directory.
 3. Choose a link parent directory and enter a link path that does not exist yet.
-4. Confirm that the card limitations and live validation pass, then select **Create Link**.
-5. Inspect the result on **Link Records**. Deletion targets the link entry only and never deletes the source content.
+4. In the acceptance build, optionally enter a name and choose a group under record information. Blank names and ungrouped records are supported. More than 20 text elements produces an inline error and disables creation or edit saving without truncating input.
+5. Confirm that the card limitations and live validation pass, then select **Create Link**.
+6. Inspect the result, edit names/groups, or manage groups on **Link Records**. Deletion targets the link entry only and never deletes the source content.
 
 Test paths and permissions in a dedicated test directory before handling important data. Do not point source or link paths at uncertain system locations.
 
@@ -64,6 +72,12 @@ Run these commands from the repository root with the .NET 10 SDK:
 dotnet restore FileLinkManager.sln
 dotnet test FileLinkManager.sln --no-restore
 dotnet build FileLinkManager.sln --no-restore -c Release -p:Platform=x64 -warnaserror
+```
+
+The window test `CreatePage_PathStatusesRefreshInRealLayoutAndFollowSelectedType` can hang in the current validation environment. Protect full test runs with `--blame-hang-timeout 30s --blame-hang-dump-type none`. Run the non-window suite separately if needed; its result does not establish that the full window suite passed:
+
+```powershell
+dotnet test FileLinkManager.sln --no-restore --filter 'FullyQualifiedName!~FileLinkManager.App.Tests.Presentation.MainWindowTests'
 ```
 
 Publish a Release, x64, win-x64, self-contained single-file build:
@@ -109,6 +123,8 @@ This project is licensed under the [MIT License](LICENSE).
 - Directory hard links, batch creation, cloud synchronization, and automatic import of links created by other tools are not supported.
 - Junctions do not support mapped network volumes; file hard links must remain on one volume.
 - Symbolic-link and other native filesystem behavior remains subject to Windows permissions, policy, volume type, and filesystem state.
+- Names and groups organize application records only. They do not rename files or create additional disk directories; groups are single-level and global within the portable database.
+- Static inspection found no explicit F1 binding, key interception, or global hotkey registration in this application. The reported cause remains unidentified, and existing keyboard behavior is preserved.
 
 ## Contributing
 
