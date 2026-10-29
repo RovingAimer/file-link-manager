@@ -148,6 +148,26 @@
                 </StackPanel>
             </Border>
 
+            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+                    BorderThickness="1" Padding="18" Margin="0,18,0,0">
+                <StackPanel>
+                    <TextBlock Text="记录信息（选填）" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock Text="名称只用于软件记录，不修改磁盘路径；创建后可在链接记录中编辑。"
+                               TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,6,0,12" />
+                    <StackPanel DataContext="{Binding MetadataEditor}" IsEnabled="{Binding IsEnabled}">
+                        <DockPanel>
+                            <TextBlock Text="自定义名称" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding TextElementCount, StringFormat={}{0}/20}" HorizontalAlignment="Right" />
+                        </DockPanel>
+                        <TextBox Text="{Binding CustomName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource PathTextBoxStyle}" Margin="0,6,0,4" />
+                        <TextBlock Text="{Binding NameError}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="分组" FontWeight="SemiBold" Margin="0,10,0,6" />
+                        <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" DisplayMemberPath="DisplayName" />
+                    </StackPanel>
+                    <Button Content="新建分组" Command="{Binding NewGroupCommand}" HorizontalAlignment="Left" Padding="12,6" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
             <Border Background="{StaticResource AccentLightBrush}"
                     BorderBrush="{StaticResource AccentBrush}"
                     BorderThickness="1"

@@ -15,7 +15,7 @@ public sealed class LinkRecordQueryService
             .Select((group, index) => (group.Id, index)).ToDictionary(item => item.Id, item => item.index);
         var records = database.Records
             .OrderBy(record => record.GroupId.HasValue ? groupOrder.GetValueOrDefault(record.GroupId.Value, int.MaxValue) : int.MaxValue)
-            .ThenBy(record => record.SortOrder)
+            .ThenByDescending(record => record.CreatedUtc)
             .Where(record => Matches(record, filter))
             .ToArray();
 

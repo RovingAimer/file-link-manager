@@ -27,7 +27,7 @@
                            TextWrapping="NoWrap"
                            Margin="4,0,4,32" />
 
-                <Button Content="创建链接"
+                <Button x:Name="CreateNavigationButton" Content="创建链接"
                         Style="{StaticResource NavigationButtonStyle}"
                         Click="ShowCreatePageClick" />
                 <Button x:Name="RecordsNavigationButton"

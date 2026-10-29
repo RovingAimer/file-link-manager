@@ -16,7 +16,7 @@ public sealed record RecordDeviceOptionViewModel(
 
 public sealed record RecordStatusOptionViewModel(LinkStatus? Status, string DisplayName);
 
-public sealed class LinkRecordsPageViewModel : ObservableObject
+public sealed partial class LinkRecordsPageViewModel : ObservableObject
 {
     private static readonly IReadOnlyList<RecordStatusOptionViewModel> DefaultStatusOptions = new[]
     {
@@ -56,7 +56,9 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
         IRecordPageDialogService dialogService,
         StorageAccessViewModel? storageAccess = null,
         ILinkRecordStoreDiagnostics? recordStoreDiagnostics = null,
-        RemoveDeletedLinkRecordUseCase? removeDeletedLinkRecordUseCase = null)
+        RemoveDeletedLinkRecordUseCase? removeDeletedLinkRecordUseCase = null,
+        IOrganizationDialogService? organizationDialogs = null,
+        LinkRecordOrganizationService? organizationService = null)
     {
         this.recordStore = recordStore ?? throw new ArgumentNullException(nameof(recordStore));
         this.deviceIdentityProvider = deviceIdentityProvider ?? throw new ArgumentNullException(nameof(deviceIdentityProvider));
@@ -90,6 +92,7 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
         DeleteCommand = new AsyncRelayCommand(
             DeleteAsync,
             CanDelete);
+        InitializeOrganization(organizationDialogs, organizationService);
     }
 
     public IReadOnlyList<RecordDeviceOptionViewModel> Devices { get; private set; }
@@ -275,9 +278,11 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
             return;
         }
 
-        selectedDevice = Devices.FirstOrDefault(device => device.IsCurrentDevice);
+        selectedDevice = Devices.First(device => device.DeviceKey is null);
         selectedStatus = StatusOptions[0];
         searchText = string.Empty;
+        selectedGroup = GroupOptions[0];
+        OnPropertyChanged(nameof(SelectedGroup));
         OnPropertyChanged(nameof(SelectedDevice));
         OnPropertyChanged(nameof(SelectedStatus));
         OnPropertyChanged(nameof(SearchText));
@@ -293,15 +298,13 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
             return;
         }
 
-        var filter = new LinkRecordFilter(
-            DeviceKey: SelectedDevice?.DeviceKey,
-            Status: SelectedStatus.Status,
-            SearchText: SearchText);
+        var filter = CurrentFilter();
         Records = queryService
             .Query(database, filter)
             .Select(record => new LinkRecordRowViewModel(record, currentDevice.DeviceKey))
             .ToArray();
         Statistics = queryService.GetStatistics(database, SelectedDevice?.DeviceKey);
+        BuildRecordGroups();
         RaiseCommandStates();
     }
 
@@ -313,6 +316,7 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
             Devices.First(device => device.IsCurrentDevice);
         OnPropertyChanged(nameof(Devices));
         OnPropertyChanged(nameof(SelectedDevice));
+        UpdateGroupOptions(nextDatabase);
         ApplyFilters();
     }
 
@@ -543,6 +547,7 @@ public sealed class LinkRecordsPageViewModel : ObservableObject
         ClearFiltersCommand.RaiseCanExecuteChanged();
         OpenFolderCommand.RaiseCanExecuteChanged();
         DeleteCommand.RaiseCanExecuteChanged();
+        RaiseOrganizationCommands();
     }
 
     private void StorageAccessOnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)

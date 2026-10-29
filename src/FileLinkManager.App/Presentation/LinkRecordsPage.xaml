@@ -72,6 +72,10 @@
                     Padding="16"
                     Margin="0,18,0,0">
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1.3*" />
                         <ColumnDefinition Width="1*" />
@@ -95,7 +99,7 @@
                                   Margin="0,6,0,0" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Margin="0,0,12,0">
-                        <TextBlock Text="搜索源路径或链接路径" FontWeight="SemiBold" />
+                        <TextBlock Text="搜索" FontWeight="SemiBold" />
                         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  IsReadOnly="{Binding IsBusy}"
                                  Style="{StaticResource PathTextBoxStyle}"
@@ -106,12 +110,35 @@
                             Command="{Binding ClearFiltersCommand}"
                             Padding="14,8"
                             VerticalAlignment="Bottom" />
+                    <StackPanel Grid.Row="1" Margin="0,12,12,0">
+                        <TextBlock Text="分组" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding GroupOptions}" SelectedItem="{Binding SelectedGroup}" DisplayMemberPath="DisplayName"
+                                  IsEnabled="{Binding CanEditFilters}" Margin="0,6,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,12,12,0">
+                        <TextBlock Text="搜索字段" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding SearchScopes}" SelectedItem="{Binding SelectedSearchScope}" DisplayMemberPath="DisplayName"
+                                  IsEnabled="{Binding CanEditFilters}" Margin="0,6,0,0" />
+                    </StackPanel>
+                    <WrapPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Bottom" Margin="0,12,0,0">
+                        <Button Content="管理分组" Command="{Binding ManageGroupsCommand}" Padding="12,6" Margin="0,0,8,0" />
+                    </WrapPanel>
                 </Grid>
             </Border>
 
-            <ItemsControl ItemsSource="{Binding Records}" Margin="0,18,0,0">
+            <ItemsControl ItemsSource="{Binding RecordGroups}" Margin="0,18,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
+                        <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,14" HorizontalContentAlignment="Stretch">
+                            <Expander.Header>
+                                <WrapPanel>
+                                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Count, StringFormat={}{0} 条}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                </WrapPanel>
+                            </Expander.Header>
+                            <ItemsControl ItemsSource="{Binding Records}" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
                         <Border Background="{StaticResource CardBrush}"
                                 BorderBrush="{StaticResource CardBorderBrush}"
                                 BorderThickness="1"
@@ -124,6 +151,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Margin="0,0,18,0">
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="链接入口 → 源路径" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,6,0,4" />
                                     <TextBlock Text="{Binding LinkPath}"
                                                FontSize="15"
                                                FontWeight="SemiBold"
@@ -142,12 +171,15 @@
                                     <TextBlock Text="{Binding StatusDisplayName}" Margin="0,5,0,0" />
                                     <TextBlock Text="{Binding CreatedAtDisplay}" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,8,0,0" />
                                     <TextBlock Text="{Binding LastCheckedAtDisplay}" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding DeviceDisplayName}" TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,3,0,0" />
                                     <TextBlock Text="离线设备快照"
                                                Visibility="{Binding IsOfflineSnapshot, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                Foreground="{StaticResource SecondaryTextBrush}"
                                                Margin="0,3,0,0" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <Button Content="编辑信息" Command="{Binding DataContext.EditMetadataCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                            CommandParameter="{Binding}" Padding="12,6" Margin="0,0,0,8" />
                                     <Button Content="打开目录"
                                             Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                             CommandParameter="{Binding}"
@@ -160,6 +192,10 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

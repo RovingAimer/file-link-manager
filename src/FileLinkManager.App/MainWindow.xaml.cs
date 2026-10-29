@@ -5,6 +5,9 @@ namespace FileLinkManager.App;
 
 public partial class MainWindow : Window
 {
+    private readonly CreateLinkPageViewModel createViewModel;
+    private readonly LinkRecordsPageViewModel? recordsViewModel;
+    private bool NavigationBusy => createViewModel.IsBusy || recordsViewModel?.IsBusy == true;
     public MainWindow(CreateLinkPageViewModel createLinkPageViewModel)
         : this(createLinkPageViewModel, null, null)
     {
@@ -23,6 +26,8 @@ public partial class MainWindow : Window
         AboutPageViewModel? aboutPageViewModel)
     {
         ArgumentNullException.ThrowIfNull(createLinkPageViewModel);
+        createViewModel = createLinkPageViewModel;
+        recordsViewModel = linkRecordsPageViewModel;
         InitializeComponent();
         CreatePage = new CreateLinkPage
         {
@@ -42,6 +47,13 @@ public partial class MainWindow : Window
             };
         RecordsNavigationButton.IsEnabled = RecordsPage is not null;
         AboutNavigationButton.IsEnabled = AboutPage is not null;
+        createViewModel.PropertyChanged += BusyChanged;
+        if (recordsViewModel is not null) recordsViewModel.PropertyChanged += BusyChanged;
+        Closed += (_, _) =>
+        {
+            createViewModel.PropertyChanged -= BusyChanged;
+            if (recordsViewModel is not null) recordsViewModel.PropertyChanged -= BusyChanged;
+        };
         ShowCreatePage();
     }
 
@@ -55,12 +67,14 @@ public partial class MainWindow : Window
 
     public void ShowCreatePage()
     {
+        if (NavigationBusy) return;
         SetActivePage(CreatePage, "创建链接", "选择链接类型，填写已有源路径和新的链接路径。");
+        _ = createViewModel.EnterPageAsync();
     }
 
     public void ShowRecordsPage()
     {
-        if (RecordsPage is null)
+        if (RecordsPage is null || NavigationBusy)
         {
             return;
         }
@@ -70,7 +84,7 @@ public partial class MainWindow : Window
 
     public void ShowAboutPage()
     {
-        if (AboutPage is null)
+        if (AboutPage is null || NavigationBusy)
         {
             return;
         }
@@ -79,6 +93,14 @@ public partial class MainWindow : Window
     }
 
     private void ShowCreatePageClick(object sender, RoutedEventArgs e) => ShowCreatePage();
+
+    private void BusyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CreateLinkPageViewModel.IsBusy)) return;
+        CreateNavigationButton.IsEnabled = !NavigationBusy;
+        RecordsNavigationButton.IsEnabled = !NavigationBusy && RecordsPage is not null;
+        AboutNavigationButton.IsEnabled = !NavigationBusy && AboutPage is not null;
+    }
 
     private void ShowRecordsPageClick(object sender, RoutedEventArgs e) => ShowRecordsPage();
 

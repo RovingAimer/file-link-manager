@@ -16,6 +16,8 @@ public sealed class LinkRecordRowViewModel
 
     public Guid Id => Record.Id;
 
+    public string DisplayName => string.IsNullOrWhiteSpace(Record.CustomName) ? "未命名链接" : Record.CustomName;
+
     public string DeviceDisplayName => Record.DeviceDisplayNameAtCreation;
 
     public string LinkPath => Record.LinkRecord.Request.LinkPath;

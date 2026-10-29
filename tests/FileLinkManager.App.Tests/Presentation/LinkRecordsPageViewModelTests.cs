@@ -279,6 +279,7 @@ public sealed class LinkRecordsPageViewModelTests
 
         await context.ViewModel.RefreshCommand.ExecuteAsync(null);
         context.ViewModel.SelectedDevice = context.ViewModel.Devices.Single(device => device.DeviceKey is null);
+        context.ViewModel.SelectedSearchScope = context.ViewModel.SearchScopes.Single(option => option.Scope == LinkRecordSearchScope.Paths);
         context.ViewModel.SearchText = "ARCHIVE";
 
         Assert.Equal(new[] { sourceHit.Id, linkHit.Id }, context.ViewModel.Records.Select(row => row.Id));

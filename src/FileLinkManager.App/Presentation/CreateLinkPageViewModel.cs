@@ -16,7 +16,7 @@ public sealed record LinkTypeCardViewModel(
     string Limitation,
     bool IsSelected = false);
 
-public sealed class CreateLinkPageViewModel : ObservableObject
+public sealed partial class CreateLinkPageViewModel : ObservableObject
 {
     private readonly IFileLinkService fileLinkService;
     private readonly CreateLinkUseCase createLinkUseCase;
@@ -48,7 +48,10 @@ public sealed class CreateLinkPageViewModel : ObservableObject
         IPathDialogService pathDialogService,
         SynchronizationContext? synchronizationContext = null,
         StorageAccessViewModel? storageAccess = null,
-        ILinkRecordStoreDiagnostics? recordStoreDiagnostics = null)
+        ILinkRecordStoreDiagnostics? recordStoreDiagnostics = null,
+        ILinkRecordStore? recordStore = null,
+        IOrganizationDialogService? organizationDialogs = null,
+        LinkRecordOrganizationService? organizationService = null)
     {
         this.fileLinkService = fileLinkService ?? throw new ArgumentNullException(nameof(fileLinkService));
         this.createLinkUseCase = createLinkUseCase ?? throw new ArgumentNullException(nameof(createLinkUseCase));
@@ -77,6 +80,8 @@ public sealed class CreateLinkPageViewModel : ObservableObject
         RetryRegistrationCommand = new AsyncRelayCommand(
             _ => ExecuteRetryRegistrationAsync(),
             _ => CanRetryRegistration);
+
+        InitializeOrganization(recordStore, organizationDialogs, organizationService);
 
         RefreshValidation();
     }
@@ -189,6 +194,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
 
             OnPropertyChanged(nameof(CanCreate));
             OnPropertyChanged(nameof(CanRetryRegistration));
+            MetadataEditor.IsEnabled = !value && !StorageAccess.IsReadOnly;
             RaiseCommandStates();
         }
     }
@@ -199,6 +205,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
         !linkCreated &&
         !StorageAccess.IsReadOnly &&
         validationIsValid &&
+        MetadataEditor.CanSave &&
         !string.IsNullOrWhiteSpace(SourcePath) &&
         !string.IsNullOrWhiteSpace(LinkPath);
 
@@ -276,7 +283,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
 
         try
         {
-            var outcome = await createLinkUseCase.ExecuteAsync(BuildRequest(), CancellationToken.None);
+            var outcome = await createLinkUseCase.ExecuteAsync(BuildRequest(), MetadataEditor.ToMetadata(), CancellationToken.None);
             ApplyCreateOutcome(outcome);
         }
         catch (OperationCanceledException)
@@ -307,6 +314,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
             var outcome = await retryRegistrationUseCase.ExecuteAsync(
                 pendingRequest!,
                 pendingInspection!,
+                pendingMetadata,
                 CancellationToken.None);
             ApplyRetryOutcome(outcome);
         }
@@ -349,6 +357,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
                 SetLinkCreated();
                 pendingRequest = unregistered.Request;
                 pendingInspection = unregistered.Inspection;
+                pendingMetadata = unregistered.Metadata;
                 ResultMessage = $"链接已创建，但登记失败：{unregistered.RegistrationError}";
                 OnPropertyChanged(nameof(CanRetryRegistration));
                 OnPropertyChanged(nameof(CanCreate));
@@ -671,6 +680,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
         BrowseLinkLocationCommand.RaiseCanExecuteChanged();
         CreateCommand.RaiseCanExecuteChanged();
         RetryRegistrationCommand.RaiseCanExecuteChanged();
+        NewGroupCommand.RaiseCanExecuteChanged();
     }
 
     private void RefreshStorageAccess()
@@ -685,6 +695,7 @@ public sealed class CreateLinkPageViewModel : ObservableObject
     {
         if (eventArgs.PropertyName is nameof(StorageAccessViewModel.IsReadOnly) or nameof(StorageAccessViewModel.Message))
         {
+            MetadataEditor.IsEnabled = !IsBusy && !StorageAccess.IsReadOnly;
             OnPropertyChanged(nameof(CanCreate));
             OnPropertyChanged(nameof(CanRetryRegistration));
             RaiseCommandStates();

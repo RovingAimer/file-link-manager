@@ -57,13 +57,18 @@ public partial class App : System.Windows.Application
         }
         storageAccess.Apply(recordStoreDiagnostics.LastLoadDiagnostics);
 
+        var organizationService = new LinkRecordOrganizationService(recordStore);
+        var organizationDialogs = new WindowsOrganizationDialogService();
         var createLinkPage = new CreateLinkPageViewModel(
             fileLinkService,
             new CreateLinkUseCase(fileLinkService, recordStore, deviceIdentityProvider),
             new RetryRegistrationUseCase(recordStore, deviceIdentityProvider),
             new WindowsPathDialogService(),
             storageAccess: storageAccess,
-            recordStoreDiagnostics: recordStoreDiagnostics);
+            recordStoreDiagnostics: recordStoreDiagnostics,
+            recordStore: recordStore,
+            organizationDialogs: organizationDialogs,
+            organizationService: organizationService);
         var inspectLinksUseCase = new InspectLinksUseCase(fileLinkService, recordStore, deviceIdentityProvider);
         var deleteLinksUseCase = new DeleteLinksUseCase(fileLinkService, recordStore, deviceIdentityProvider);
         var removeDeletedLinkRecordUseCase = new RemoveDeletedLinkRecordUseCase(recordStore);
@@ -76,7 +81,9 @@ public partial class App : System.Windows.Application
             new WindowsRecordPageDialogService(),
             storageAccess,
             recordStoreDiagnostics,
-            removeDeletedLinkRecordUseCase);
+            removeDeletedLinkRecordUseCase,
+            organizationDialogs,
+            organizationService);
         var aboutPage = new AboutPageViewModel(
             deviceIdentityProvider,
             dataRoot,
