@@ -19,4 +19,7 @@ public sealed record CreatedAndRegistered(PersistedLinkRecord Record) : CreateLi
 public sealed record CreatedButUnregistered(
     LinkRequest Request,
     LinkInspection Inspection,
-    string RegistrationError) : CreateLinkOutcome;
+    string RegistrationError) : CreateLinkOutcome
+{
+    public LinkRecordMetadata Metadata { get; init; } = new();
+}

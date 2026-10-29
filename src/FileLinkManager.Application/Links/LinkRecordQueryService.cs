@@ -11,7 +11,11 @@ public sealed class LinkRecordQueryService
 
         filter ??= new LinkRecordFilter();
 
+        var groupOrder = database.Groups.OrderBy(group => group.SortOrder)
+            .Select((group, index) => (group.Id, index)).ToDictionary(item => item.Id, item => item.index);
         var records = database.Records
+            .OrderBy(record => record.GroupId.HasValue ? groupOrder.GetValueOrDefault(record.GroupId.Value, int.MaxValue) : int.MaxValue)
+            .ThenBy(record => record.SortOrder)
             .Where(record => Matches(record, filter))
             .ToArray();
 
@@ -44,7 +48,9 @@ public sealed class LinkRecordQueryService
     private static bool Matches(PersistedLinkRecord record, LinkRecordFilter filter) =>
         MatchesDevice(record, filter.DeviceKey) &&
         MatchesStatus(record, filter.Status) &&
-        MatchesSearch(record, filter.SearchText);
+        (!filter.GroupId.HasValue || record.GroupId == filter.GroupId) &&
+        (!filter.UngroupedOnly || record.GroupId is null) &&
+        MatchesSearch(record, filter.SearchText, filter.SearchScope);
 
     private static bool MatchesDevice(PersistedLinkRecord record, string? deviceKey) =>
         string.IsNullOrWhiteSpace(deviceKey) ||
@@ -60,8 +66,16 @@ public sealed class LinkRecordQueryService
     private static bool IsDeleted(PersistedLinkRecord record) =>
         record.Status == LinkStatus.Deleted || record.DeletedUtc is not null;
 
-    private static bool MatchesSearch(PersistedLinkRecord record, string? searchText) =>
-        string.IsNullOrWhiteSpace(searchText) ||
-        record.LinkRecord.Request.SourcePath.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-        record.LinkRecord.Request.LinkPath.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+    private static bool MatchesSearch(PersistedLinkRecord record, string? searchText, LinkRecordSearchScope scope)
+    {
+        if (string.IsNullOrWhiteSpace(searchText)) return true;
+        return scope switch
+        {
+            LinkRecordSearchScope.Name => record.CustomName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+            LinkRecordSearchScope.SourcePath => record.LinkRecord.Request.SourcePath.Contains(searchText, StringComparison.OrdinalIgnoreCase),
+            LinkRecordSearchScope.LinkPath => record.LinkRecord.Request.LinkPath.Contains(searchText, StringComparison.OrdinalIgnoreCase),
+            _ => record.LinkRecord.Request.SourcePath.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                 record.LinkRecord.Request.LinkPath.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+        };
+    }
 }

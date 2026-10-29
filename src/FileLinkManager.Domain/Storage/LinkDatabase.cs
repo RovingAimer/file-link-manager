@@ -5,7 +5,9 @@ public sealed record LinkDatabase(
     IReadOnlyList<DeviceIdentity> Devices,
     IReadOnlyList<PersistedLinkRecord> Records)
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+
+    public IReadOnlyList<LinkRecordGroup> Groups { get; init; } = Array.Empty<LinkRecordGroup>();
 
     public static LinkDatabase Empty() => new(
         CurrentSchemaVersion,

@@ -1,5 +1,6 @@
 using FileLinkManager.Application.Abstractions;
 using FileLinkManager.Domain.Links;
+using FileLinkManager.Domain.Storage;
 
 namespace FileLinkManager.Application.Links;
 
@@ -19,9 +20,15 @@ public sealed class RetryRegistrationUseCase
         this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
+    public Task<RetryRegistrationOutcome> ExecuteAsync(
+        LinkRequest request,
+        LinkInspection inspection,
+        CancellationToken cancellationToken) => ExecuteAsync(request, inspection, new LinkRecordMetadata(), cancellationToken);
+
     public async Task<RetryRegistrationOutcome> ExecuteAsync(
         LinkRequest request,
         LinkInspection inspection,
+        LinkRecordMetadata metadata,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -40,6 +47,7 @@ public sealed class RetryRegistrationUseCase
             recordStore,
             deviceIdentityProvider,
             timeProvider,
+            metadata,
             cancellationToken);
         return new RetryRegistrationSucceeded(record);
     }

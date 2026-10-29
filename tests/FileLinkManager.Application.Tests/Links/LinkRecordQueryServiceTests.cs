@@ -10,14 +10,14 @@ public sealed class LinkRecordQueryServiceTests
     private static readonly DateTimeOffset Timestamp = new(2026, 8, 8, 9, 30, 0, TimeSpan.Zero);
 
     [Fact]
-    public void LinkRecordFilter_ExposesOnlyDeviceStatusAndSearchText()
+    public void LinkRecordFilter_ExposesDeviceStatusSearchAndOrganizationFields()
     {
         var properties = typeof(LinkRecordFilter)
             .GetProperties()
             .Select(property => property.Name)
             .OrderBy(name => name);
 
-        Assert.Equal(new[] { "DeviceKey", "SearchText", "Status" }, properties);
+        Assert.Equal(new[] { "DeviceKey", "GroupId", "SearchScope", "SearchText", "Status", "UngroupedOnly" }, properties);
     }
 
     [Fact]

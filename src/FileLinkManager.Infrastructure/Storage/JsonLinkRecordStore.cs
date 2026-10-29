@@ -261,7 +261,17 @@ public sealed class JsonLinkRecordStore : ILinkRecordStore, ILinkRecordStoreDiag
             }
 
             ValidateDatabase(database, requireCurrentWritableSchema: false);
-            return database;
+            return database.SchemaVersion == 1
+                ? database with
+                {
+                    SchemaVersion = LinkDatabase.CurrentSchemaVersion,
+                    Groups = Array.Empty<LinkRecordGroup>(),
+                    Records = database.Records.Select(record => record with
+                    {
+                        CustomName = null, GroupId = null, SortOrder = 0
+                    }).ToArray()
+                }
+                : database;
         }
         catch (Exception exception) when (exception is JsonException or NotSupportedException)
         {
@@ -295,6 +305,26 @@ public sealed class JsonLinkRecordStore : ILinkRecordStore, ILinkRecordStoreDiag
             }
         }
 
+        var groupIds = new HashSet<Guid>();
+        if (database.SchemaVersion == LinkDatabase.CurrentSchemaVersion)
+        {
+            if (database.Groups is null)
+            {
+                throw new InvalidDataException("The JSON data requires a groups collection.");
+            }
+
+            var groupNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var group in database.Groups)
+            {
+                if (group is null || group.Id == Guid.Empty || !groupIds.Add(group.Id) ||
+                    string.IsNullOrWhiteSpace(group.Name) || group.Name != group.Name.Trim() ||
+                    !groupNames.Add(group.Name) || group.SortOrder < 0)
+                {
+                    throw new InvalidDataException("The JSON data contains invalid group metadata.");
+                }
+            }
+        }
+
         var recordIds = new HashSet<Guid>();
         foreach (var record in database.Records)
         {
@@ -316,6 +346,22 @@ public sealed class JsonLinkRecordStore : ILinkRecordStore, ILinkRecordStoreDiag
             }
 
             ValidateLinkRecord(record.LinkRecord);
+            if (database.SchemaVersion == LinkDatabase.CurrentSchemaVersion)
+            {
+                try
+                {
+                    var metadata = new LinkRecordMetadata(record.CustomName, record.GroupId).Normalize();
+                    if (record.SortOrder < 0 || metadata.CustomName != record.CustomName ||
+                        (record.GroupId.HasValue && !groupIds.Contains(record.GroupId.Value)))
+                    {
+                        throw new ArgumentException("Invalid record organization metadata.");
+                    }
+                }
+                catch (ArgumentException exception)
+                {
+                    throw new InvalidDataException("The JSON data contains invalid record organization metadata.", exception);
+                }
+            }
         }
     }
 

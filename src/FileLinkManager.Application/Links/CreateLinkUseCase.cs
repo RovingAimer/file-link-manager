@@ -1,5 +1,6 @@
 using FileLinkManager.Application.Abstractions;
 using FileLinkManager.Domain.Links;
+using FileLinkManager.Domain.Storage;
 
 namespace FileLinkManager.Application.Links;
 
@@ -22,10 +23,33 @@ public sealed class CreateLinkUseCase
         this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
-    public async Task<CreateLinkOutcome> ExecuteAsync(LinkRequest request, CancellationToken cancellationToken)
+    public Task<CreateLinkOutcome> ExecuteAsync(LinkRequest request, CancellationToken cancellationToken) =>
+        ExecuteAsync(request, new LinkRecordMetadata(), cancellationToken);
+
+    public async Task<CreateLinkOutcome> ExecuteAsync(LinkRequest request, LinkRecordMetadata metadata, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(metadata);
         cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            metadata = metadata.Normalize();
+            if (metadata.GroupId.HasValue)
+            {
+                var database = await recordStore.LoadAsync(cancellationToken);
+                if (database.SchemaVersion > LinkDatabase.CurrentSchemaVersion ||
+                    recordStore is ILinkRecordStoreDiagnostics { LastLoadDiagnostics.IsReadOnly: true })
+                {
+                    return new CreateLinkValidationFailed(new LinkValidationResult(false, new[] { "记录存储处于只读模式。" }));
+                }
+                metadata = LinkRecordOrganizationService.ValidateMetadata(database, metadata);
+            }
+        }
+        catch (ArgumentException exception)
+        {
+            return new CreateLinkValidationFailed(new LinkValidationResult(false, new[] { exception.Message }));
+        }
 
         var validation = fileLinkService.Validate(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -49,12 +73,13 @@ public sealed class CreateLinkUseCase
                 recordStore,
                 deviceIdentityProvider,
                 timeProvider,
+                metadata,
                 CancellationToken.None);
             return new CreatedAndRegistered(record);
         }
         catch (Exception exception) when (exception is LinkRecordStoreException or OperationCanceledException)
         {
-            return new CreatedButUnregistered(request, inspection, exception.Message);
+            return new CreatedButUnregistered(request, inspection, exception.Message) { Metadata = metadata };
         }
     }
 }

@@ -11,4 +11,9 @@ public sealed record PersistedLinkRecord(
     DateTimeOffset LastCheckedUtc,
     DateTimeOffset? DeletedUtc,
     LinkStatus Status,
-    string? StatusReason);
+    string? StatusReason)
+{
+    public string? CustomName { get; init; }
+    public Guid? GroupId { get; init; }
+    public int SortOrder { get; init; }
+}

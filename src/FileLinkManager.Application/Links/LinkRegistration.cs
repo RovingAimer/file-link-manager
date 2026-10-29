@@ -51,12 +51,22 @@ internal static class LinkRegistration
         return null;
     }
 
+    internal static Task<PersistedLinkRecord> RegisterAsync(
+        LinkRequest request,
+        LinkInspection inspection,
+        ILinkRecordStore store,
+        IDeviceIdentityProvider deviceIdentityProvider,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken) =>
+        RegisterAsync(request, inspection, store, deviceIdentityProvider, timeProvider, new LinkRecordMetadata(), cancellationToken);
+
     internal static async Task<PersistedLinkRecord> RegisterAsync(
         LinkRequest request,
         LinkInspection inspection,
         ILinkRecordStore store,
         IDeviceIdentityProvider deviceIdentityProvider,
         TimeProvider timeProvider,
+        LinkRecordMetadata metadata,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -84,11 +94,25 @@ internal static class LinkRegistration
         var database = await store.LoadAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
+        try
+        {
+            metadata = LinkRecordOrganizationService.ValidateMetadata(database, metadata);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new LinkRecordStoreException("link-records.json", exception.Message, exception);
+        }
+        // Stable ordering also preserves the original order of schema-1 records with default zero.
+        var siblings = database.Records.Where(item => item.GroupId == metadata.GroupId).OrderBy(item => item.SortOrder).ToArray();
+        record = record with { CustomName = metadata.CustomName, GroupId = metadata.GroupId, SortOrder = siblings.Length };
+        var orders = siblings.Select((item, index) => (item.Id, index)).ToDictionary(item => item.Id, item => item.index);
+
         var devices = DeviceIdentityCollection.Merge(database.Devices, device);
         var updatedDatabase = database with
         {
             Devices = devices,
-            Records = database.Records.Concat(new[] { record }).ToArray()
+            Records = database.Records.Select(item => orders.TryGetValue(item.Id, out var order)
+                ? item with { SortOrder = order } : item).Append(record).ToArray()
         };
 
         cancellationToken.ThrowIfCancellationRequested();
