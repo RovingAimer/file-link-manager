@@ -681,6 +681,8 @@ public sealed partial class CreateLinkPageViewModel : ObservableObject
         CreateCommand.RaiseCanExecuteChanged();
         RetryRegistrationCommand.RaiseCanExecuteChanged();
         NewGroupCommand.RaiseCanExecuteChanged();
+        RenameGroupCommand.RaiseCanExecuteChanged();
+        DeleteGroupCommand.RaiseCanExecuteChanged();
     }
 
     private void RefreshStorageAccess()

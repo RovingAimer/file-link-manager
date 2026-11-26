@@ -54,20 +54,20 @@ public sealed class WindowsOrganizationDialogService : IOrganizationDialogServic
     }
 
     public bool ConfirmDissolveGroup(string name) => System.Windows.MessageBox.Show(
-        $"解散分组“{name}”？\n\n保留链接记录并归入未分组，不删除磁盘链接。", "确认解散分组",
+        $"删除分组“{name}”？\n\n保留链接记录并归入未分组，不删除磁盘链接。", "确认删除分组",
         MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
 
     public void ShowGroupManager(LinkGroupManagerViewModel viewModel)
     {
         var panel = Panel(); var window = Dialog("管理分组", panel);
         window.DataContext = viewModel;
-        panel.Children.Add(Text("解散分组会保留链接记录并归入未分组，不删除磁盘链接。"));
+        panel.Children.Add(Text("删除分组会保留链接记录并归入未分组，不删除磁盘链接。"));
         var list = new ListBox { DisplayMemberPath = "Name", Height = 200, Margin = new Thickness(0, 8, 0, 12) };
         list.SetBinding(ItemsControl.ItemsSourceProperty, new Binding("Groups"));
         list.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedItemProperty, new Binding("SelectedGroup") { Mode = BindingMode.TwoWay });
         panel.Children.Add(list);
         var buttons = new WrapPanel(); panel.Children.Add(buttons);
-        foreach (var (label, command) in new[] { ("新建分组", "NewCommand"), ("改名", "RenameCommand"), ("解散分组", "DissolveCommand") })
+        foreach (var (label, command) in new[] { ("新增分组", "NewCommand"), ("重命名", "RenameCommand"), ("删除分组", "DissolveCommand") })
         {
             var button = new Button { Content = label, Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(0, 0, 8, 0) };
             button.SetBinding(Button.CommandProperty, new Binding(command)); buttons.Children.Add(button);

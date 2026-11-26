@@ -162,9 +162,68 @@
                         <TextBox Text="{Binding CustomName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource PathTextBoxStyle}" Margin="0,6,0,4" />
                         <TextBlock Text="{Binding NameError}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" />
                         <TextBlock Text="分组" FontWeight="SemiBold" Margin="0,10,0,6" />
-                        <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" DisplayMemberPath="DisplayName" />
+                        <ListBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
+                                 MaxHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
+                                 AutomationProperties.Name="选择分组">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="10,5" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="SelectionBorder" BorderThickness="1"
+                                                        BorderBrush="Transparent" Background="Transparent">
+                                                    <ContentPresenter HorizontalAlignment="Stretch"
+                                                                      Margin="{TemplateBinding Padding}" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="SelectionBorder" Property="Background" Value="{StaticResource AccentLightBrush}" />
+                                                        <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                        <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding GroupId}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <Button Content="重命名" Padding="10,4" Margin="0,0,6,0"
+                                                    Command="{Binding DataContext.RenameGroupCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="删除" Padding="10,4"
+                                                    Command="{Binding DataContext.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
-                    <Button Content="新建分组" Command="{Binding NewGroupCommand}" HorizontalAlignment="Left" Padding="12,6" Margin="0,10,0,0" />
+                    <Button Content="新增分组" Command="{Binding NewGroupCommand}" HorizontalAlignment="Left" Padding="12,6" Margin="0,10,0,0" />
+                    <TextBlock Text="{Binding GroupMessage}" Foreground="{StaticResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
                 </StackPanel>
             </Border>
 

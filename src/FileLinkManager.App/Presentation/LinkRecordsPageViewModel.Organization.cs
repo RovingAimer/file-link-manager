@@ -11,6 +11,7 @@ public sealed partial class LinkRecordsPageViewModel
 {
     private LinkRecordOrganizationService organizationService = null!;
     private IOrganizationDialogService organizationDialogs = null!;
+    private Func<Guid, bool>? canDissolveGroup;
     private RecordGroupOptionViewModel selectedGroup = new(null, "全部分组", true);
     private RecordSearchScopeViewModel selectedSearchScope = new(LinkRecordSearchScope.Name, "名称");
     private IReadOnlyList<RecordGroupViewModel> recordGroups = Array.Empty<RecordGroupViewModel>();
@@ -41,10 +42,11 @@ public sealed partial class LinkRecordsPageViewModel
     public AsyncRelayCommand EditMetadataCommand { get; private set; } = null!;
     public AsyncRelayCommand ManageGroupsCommand { get; private set; } = null!;
 
-    private void InitializeOrganization(IOrganizationDialogService? dialogs, LinkRecordOrganizationService? service)
+    private void InitializeOrganization(IOrganizationDialogService? dialogs, LinkRecordOrganizationService? service, Func<Guid, bool>? canDissolve)
     {
         organizationService = service ?? new LinkRecordOrganizationService(recordStore);
         organizationDialogs = dialogs ?? new WindowsOrganizationDialogService();
+        canDissolveGroup = canDissolve;
         EditMetadataCommand = new AsyncRelayCommand(EditMetadataAsync, parameter => CanWriteOrganization && parameter is LinkRecordRowViewModel);
         ManageGroupsCommand = new AsyncRelayCommand(_ => ManageGroupsAsync(), _ => CanWriteOrganization);
     }
@@ -96,7 +98,7 @@ public sealed partial class LinkRecordsPageViewModel
         var latest = await recordStore.LoadAsync(CancellationToken.None);
         RefreshStorageAccess();
         if (StorageAccess.IsReadOnly) throw new InvalidOperationException("记录存储处于只读模式。");
-        organizationDialogs.ShowGroupManager(new LinkGroupManagerViewModel(latest, organizationService, organizationDialogs, StorageAccess, RefreshStorageAccess));
+        organizationDialogs.ShowGroupManager(new LinkGroupManagerViewModel(latest, organizationService, organizationDialogs, StorageAccess, RefreshStorageAccess, canDissolveGroup));
         return await recordStore.LoadAsync(CancellationToken.None);
     }, "分组列表已更新。");
 

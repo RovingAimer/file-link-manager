@@ -18,7 +18,8 @@ public sealed class LinkGroupManagerViewModel : ObservableObject
     private string? message;
 
     public LinkGroupManagerViewModel(LinkDatabase database, LinkRecordOrganizationService service,
-        IOrganizationDialogService dialogs, StorageAccessViewModel storageAccess, Action refreshStorage)
+        IOrganizationDialogService dialogs, StorageAccessViewModel storageAccess, Action refreshStorage,
+        Func<Guid, bool>? canDissolveGroup = null)
     {
         this.service = service;
         this.dialogs = dialogs;
@@ -39,6 +40,11 @@ public sealed class LinkGroupManagerViewModel : ObservableObject
         DissolveCommand = new AsyncRelayCommand(_ => RunAsync(async () =>
         {
             var group = SelectedGroup!;
+            if (canDissolveGroup is not null && !canDissolveGroup(group.Id))
+            {
+                Message = "该分组关联待重试登记，请先完成登记后再删除。";
+                return null;
+            }
             return dialogs.ConfirmDissolveGroup(group.Name)
                 ? await service.DissolveGroupAsync(group.Id, CancellationToken.None) : null;
         }), _ => CanWrite && SelectedGroup is not null);
@@ -63,6 +69,7 @@ public sealed class LinkGroupManagerViewModel : ObservableObject
     private async Task RunAsync(Func<Task<LinkDatabase?>> operation)
     {
         IsBusy = true;
+        Message = null;
         try
         {
             var id = SelectedGroup?.Id;

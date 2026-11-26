@@ -58,7 +58,8 @@ public sealed partial class LinkRecordsPageViewModel : ObservableObject
         ILinkRecordStoreDiagnostics? recordStoreDiagnostics = null,
         RemoveDeletedLinkRecordUseCase? removeDeletedLinkRecordUseCase = null,
         IOrganizationDialogService? organizationDialogs = null,
-        LinkRecordOrganizationService? organizationService = null)
+        LinkRecordOrganizationService? organizationService = null,
+        Func<Guid, bool>? canDissolveGroup = null)
     {
         this.recordStore = recordStore ?? throw new ArgumentNullException(nameof(recordStore));
         this.deviceIdentityProvider = deviceIdentityProvider ?? throw new ArgumentNullException(nameof(deviceIdentityProvider));
@@ -92,7 +93,7 @@ public sealed partial class LinkRecordsPageViewModel : ObservableObject
         DeleteCommand = new AsyncRelayCommand(
             DeleteAsync,
             CanDelete);
-        InitializeOrganization(organizationDialogs, organizationService);
+        InitializeOrganization(organizationDialogs, organizationService, canDissolveGroup);
     }
 
     public IReadOnlyList<RecordDeviceOptionViewModel> Devices { get; private set; }

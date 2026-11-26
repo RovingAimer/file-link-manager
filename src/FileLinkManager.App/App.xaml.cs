@@ -83,7 +83,8 @@ public partial class App : System.Windows.Application
             recordStoreDiagnostics,
             removeDeletedLinkRecordUseCase,
             organizationDialogs,
-            organizationService);
+            organizationService,
+            createLinkPage.CanDissolveGroup);
         var aboutPage = new AboutPageViewModel(
             deviceIdentityProvider,
             dataRoot,
