@@ -67,11 +67,10 @@ public sealed partial class LinkRecordsPageViewModel
     private void BuildRecordGroups()
     {
         foreach (var group in RecordGroups) expansion[group.GroupId ?? Guid.Empty] = group.IsExpanded;
-        RecordGroups = database!.Groups.OrderBy(group => group.SortOrder)
-            .Select(group => new RecordGroupOptionViewModel(group.Id, group.Name))
-            .Append(new RecordGroupOptionViewModel(null, "未分组"))
+        var rowsByGroup = Records.ToLookup(row => row.Record.GroupId);
+        RecordGroups = GroupOptions.Where(group => !group.IsAll)
             .Select(group => new RecordGroupViewModel(group.GroupId, group.DisplayName,
-                Records.Where(row => row.Record.GroupId == group.GroupId).ToArray())
+                rowsByGroup[group.GroupId].ToArray())
                 { IsExpanded = expansion.GetValueOrDefault(group.GroupId ?? Guid.Empty, true) })
             .Where(group => group.Count > 0 || !HasFilters).ToArray();
         OnPropertyChanged(nameof(HasFilters));
